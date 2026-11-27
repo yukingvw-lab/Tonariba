@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>となりば</title>
+<style>
+:root{
+  --bg:#f5f4ef;--surface:#fff;--surface2:#efeee8;--text:#222320;--muted:#6c6c65;--line:#e1dfd6;
+  --accent:#2f7d6b;--accent-ink:#fff;--official:#2b5fa8;--official-bg:#e8eff9;--badge-ink:#fff;
+  --ok:#2f7d4f;--ok-bg:#e3f2e8;--warn:#a96a0a;--warn-bg:#fbefd8;--danger:#b8372a;--danger-bg:#fbe4e0;--unk:#55555b;--unk-bg:#e9e9ec;
+  --alert:#b8372a;--alert-ink:#fff;--shadow:0 1px 2px rgba(0,0,0,.06);--lift:0 8px 24px rgba(0,0,0,.12);
+  --ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.34,1.56,.64,1);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#151716;--surface:#1f2321;--surface2:#2a2f2c;--text:#e8e9e4;--muted:#9a9d95;--line:#333936;
+  --accent:#5fb89f;--accent-ink:#0e1a16;--official:#8db6f0;--official-bg:#1d2a3d;--badge-ink:#0d1726;
+  --ok:#74c796;--ok-bg:#1c3326;--warn:#e4b05a;--warn-bg:#3a2f18;--danger:#ef8a7c;--danger-bg:#401f1b;--unk:#b3b3bb;--unk-bg:#2e2e33;
+  --alert:#ef8a7c;--alert-ink:#1a0c0a;--shadow:none;--lift:0 8px 24px rgba(0,0,0,.5);}}
+:root[data-theme="dark"]{
+  --bg:#151716;--surface:#1f2321;--surface2:#2a2f2c;--text:#e8e9e4;--muted:#9a9d95;--line:#333936;
+  --accent:#5fb89f;--accent-ink:#0e1a16;--official:#8db6f0;--official-bg:#1d2a3d;--badge-ink:#0d1726;
+  --ok:#74c796;--ok-bg:#1c3326;--warn:#e4b05a;--warn-bg:#3a2f18;--danger:#ef8a7c;--danger-bg:#401f1b;--unk:#b3b3bb;--unk-bg:#2e2e33;
+  --alert:#ef8a7c;--alert-ink:#1a0c0a;--shadow:none;--lift:0 8px 24px rgba(0,0,0,.5);}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+html{font-size:16px}
+html[data-fs="l"]{font-size:19px}
+html[data-fs="xl"]{font-size:22px}
+body{background:var(--bg);color:var(--text);font:1rem/1.6system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;-webkit-text-size-adjust:100%;transition:background-color .4s,color .4s;overflow-x:hidden}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;transition:transform .15s var(--ease),background-color .25s,color .25s,border-color .25s}
+button:active{transform:scale(.95)}
+#app{max-width:520px;margin:0 auto;min-height:100vh;min-height:100dvh;position:relative;padding-bottom:84px}
+h2,h3,p{margin:0}
+.muted{color:var(--muted);font-size:.875rem}
+.sub{font-size:.75rem;color:var(--muted)}
+
+/* header */
+header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:10px 16px;transition:background-color .4s,border-color .4s}
+header .brand{font-weight:700;font-size:1.125rem;letter-spacing:.04em}
+header .me{margin-left:auto;font-size:.8125rem;color:var(--muted);background:var(--surface2);padding:2px 10px;border-radius:99px;max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.iconbtn{padding:6px 10px;border-radius:8px;color:var(--muted);font-size:.875rem;border:1px solid var(--line)}
+[data-disaster="1"] header{background:color-mix(in srgb,var(--danger-bg) 90%,transparent);border-bottom-color:var(--alert)}
+.banner{display:none;background:var(--alert);color:var(--alert-ink);text-align:center;font-weight:700;padding:6px 16px;font-size:.875rem;letter-spacing:.08em;overflow:hidden}
+[data-disaster="1"] .banner{display:block}
+.banner.drop{animation:drop .5s var(--ease) both}
+@keyframes drop{from{max-height:0;padding-top:0;padding-bottom:0;opacity:0}to{max-height:40px;opacity:1}}
+
+main{padding:16px;display:flex;flex-direction:column;gap:12px}
+
+/* page transitions */
+main.enter>*{animation:rise .45s var(--ease) both;animation-delay:calc(var(--i,0)*45ms)}
+main.enter.r>*{animation-name:fromR}
+main.enter.l>*{animation-name:fromL}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+@keyframes fromR{from{opacity:0;transform:translateX(28px)}}
+@keyframes fromL{from{opacity:0;transform:translateX(-28px)}}
+.flash{position:fixed;inset:0;z-index:30;pointer-events:none;background:var(--alert);animation:flash .7s ease-out both}
+@keyframes flash{0%{opacity:0}20%{opacity:.35}100%{opacity:0}}
+
+/* tabs */
+nav{position:fixed;bottom:0;left:0;right:0;z-index:5;background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line)}
+nav .in{max-width:520px;margin:0 auto;display:flex;position:relative}
+nav button{flex:1;padding:14px 4px 16px;color:var(--muted);font-size:.9375rem}
+nav button.on{color:var(--text);font-weight:700}
+nav .ind{position:absolute;top:0;left:0;height:3px;width:calc(100% / var(--n));transition:transform .4s var(--spring)}
+nav .ind::before{content:"";position:absolute;left:30%;right:30%;top:0;bottom:0;border-radius:0 0 3px 3px;background:var(--accent)}
+[data-disaster="1"] nav .ind::before{background:var(--alert)}
+.fab{position:fixed;right:max(16px,calc(50% - 244px));bottom:84px;z-index:6;background:var(--accent);color:var(--accent-ink);width:54px;height:54px;border-radius:50%;font-size:1.75rem;line-height:1;box-shadow:var(--lift)}
+.fab.pop{animation:fabin .45s var(--spring) both}
+@keyframes fabin{from{transform:scale(0) rotate(-90deg)}}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px;transition:background-color .4s,border-color .4s}
+.card.official{border-color:color-mix(in srgb,var(--official) 45%,var(--line))}
+.card.urgent{border-color:var(--alert);background:var(--danger-bg)}
+.meta{display:flex;align-items:center;gap:8px;font-size:.875rem}
+.meta .time{margin-left:auto;color:var(--muted);font-size:.8125rem}
+.badge{background:var(--official);color:var(--badge-ink);font-size:.6875rem;font-weight:700;padding:1px 8px;border-radius:99px;letter-spacing:.06em}
+.card h3{font-size:1.0625rem;line-height:1.4}
+.card p{white-space:pre-wrap;overflow-wrap:anywhere}
+.flyerhead{display:flex;gap:12px;align-items:center;background:var(--official-bg);border-radius:12px;padding:10px 12px}
+.flyerhead .date{font-weight:800;font-size:1.0625rem;color:var(--official);text-align:center;min-width:64px;line-height:1.25;white-space:pre-line}
+.card:not(.official) .flyerhead{background:var(--surface2)}
+.card:not(.official) .flyerhead .date{color:var(--text)}
+.actions{display:flex;gap:6px;margin-top:2px}
+.actions button{font-size:.875rem;color:var(--muted);padding:4px 12px;border-radius:99px;border:1px solid var(--line)}
+.actions button.on{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.actions .end{margin-left:auto}
+.bump{animation:bump .45s var(--spring)}
+@keyframes bump{40%{transform:scale(1.18)}}
+.replies{border-top:1px dashed var(--line);padding-top:8px;display:flex;flex-direction:column;gap:6px}
+.replies.open{animation:unfold .35s var(--ease) both;transform-origin:top}
+@keyframes unfold{from{opacity:0;transform:translateY(-6px) scaleY(.96)}}
+.reply{font-size:.9375rem}.reply b{font-size:.8125rem;color:var(--muted);margin-right:6px}
+.reply.new{animation:rise .35s var(--ease) both}
+.rbox{display:flex;gap:6px}
+.rbox input{flex:1;min-width:0}
+
+/* poll */
+.poll{display:flex;flex-direction:column;gap:6px}
+.opt{position:relative;text-align:left;border:1px solid var(--line);border-radius:10px;padding:9px 12px;overflow:hidden;background:var(--surface)}
+.opt .bar{position:absolute;inset:0 auto 0 0;background:var(--surface2);z-index:0;transform-origin:left}
+.opt .bar.grow{animation:grow .7s var(--ease) both}
+@keyframes grow{from{transform:scaleX(0)}}
+.opt span{position:relative;z-index:1;display:flex;justify-content:space-between;gap:8px}
+.opt.mine{border-color:var(--accent);font-weight:700}
+.opt.mine .bar{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+
+/* inputs */
+input[type=text],textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 12px;outline:none;transition:border-color .2s,box-shadow .2s}
+input[type=text]:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)}
+textarea{resize:vertical;min-height:96px}
+.btn{background:var(--accent);color:var(--accent-ink);padding:10px 18px;border-radius:10px;font-weight:700;white-space:nowrap;flex:none}
+.btn.ghost{background:none;color:var(--text);border:1px solid var(--line);font-weight:400}
+.btn.sm{padding:6px 14px;font-size:.875rem}
+.btn.big{padding:14px 48px;border-radius:99px;font-size:1.0625rem;box-shadow:var(--lift)}
+.row{display:flex;gap:8px;align-items:center}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:5px 14px;border-radius:99px;border:1px solid var(--line);font-size:.875rem;color:var(--muted)}
+.chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>.chip{align-self:flex-start}
+.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{flex:1;padding:8px 4px;color:var(--muted);line-height:1.3}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.tally div{overflow-wrap:anywhere}
+.field label{font-size:.8125rem;color:var(--muted)}
+.fade{animation:rise .35s var(--ease) both}
+
+/* toggle switch */
+.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 0;cursor:pointer}
+.tg{appearance:none;-webkit-appearance:none;margin:0;flex:none;width:46px;height:28px;border-radius:99px;background:var(--line);position:relative;cursor:pointer;transition:background-color .25s}
+.tg::before{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .3s var(--spring)}
+.tg:checked{background:var(--accent)}
+.tg:checked::before{transform:translateX(18px)}
+.tg.alert:checked{background:var(--alert)}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center;animation:fadein .25s ease both}
+.sheet{background:var(--surface);width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:10px 16px 24px;display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow:auto;animation:up .4s var(--ease) both}
+.sheet::before{content:"";align-self:center;width:40px;height:4px;border-radius:99px;background:var(--line);margin-bottom:4px}
+.scrim.out{animation:fadeout .22s ease both}
+.scrim.out .sheet{animation:down .22s ease-in both}
+@keyframes fadein{from{opacity:0}}
+@keyframes fadeout{to{opacity:0}}
+@keyframes up{from{transform:translateY(100%)}}
+@keyframes down{to{transform:translateY(100%)}}
+
+/* join */
+.join{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px;text-align:center}
+.join .brand{font-size:2rem;font-weight:700;letter-spacing:.1em;animation:rise .6s var(--ease) both}
+.qr{background:#fff;padding:14px;border-radius:20px;width:220px;height:220px;box-shadow:var(--lift);animation:qrin .7s var(--spring) .1s both}
+@keyframes qrin{from{opacity:0;transform:scale(.85)}}
+.join .btn{animation:rise .6s var(--ease) .25s both}
+.qr svg{width:100%;height:100%;display:block}
+.join.leave{animation:leave .45s var(--ease) both}
+.join.leave .qr{animation:zoomout .45s var(--ease) both}
+@keyframes leave{to{opacity:0}}
+@keyframes zoomout{to{transform:scale(1.6);opacity:0}}
+
+/* safety */
+.ask{text-align:center;gap:14px;padding:20px 16px}
+.ask h2{font-size:1.25rem}
+.ans{display:flex;flex-direction:column;gap:10px}
+.ans button{padding:16px;border-radius:14px;font-size:1.0625rem;font-weight:700;border:2px solid transparent;position:relative}
+.a-ok{background:var(--ok-bg);color:var(--ok)}
+.a-dmg{background:var(--warn-bg);color:var(--warn)}
+.a-help{background:var(--danger-bg);color:var(--danger)}
+.ans button.sel{border-color:currentColor}
+.ans button.sel::after{content:"";position:absolute;right:16px;top:50%;width:8px;height:14px;margin-top:-9px;border:solid currentColor;border-width:0 3px 3px 0;transform:rotate(45deg)}
+.ans.dim button:not(.sel){opacity:.55}
+.ans button.pop{animation:bump .5s var(--spring)}
+.ans button.pop::after{animation:tick .35s var(--ease) .1s both}
+@keyframes tick{from{opacity:0;transform:rotate(45deg) scale(.3)}}
+.status{display:inline-block;padding:2px 12px;border-radius:99px;font-size:.8125rem;font-weight:700;white-space:nowrap}
+.s-ok{background:var(--ok-bg);color:var(--ok)}.s-dmg{background:var(--warn-bg);color:var(--warn)}.s-help{background:var(--danger-bg);color:var(--danger)}.s-unk{background:var(--unk-bg);color:var(--unk)}
+
+/* admin */
+.tally{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
+.tally div{border-radius:12px;padding:8px 2px;font-size:.75rem;font-weight:700}
+.tally b{display:block;font-size:1.5rem;line-height:1.2}
+.list{display:flex;flex-direction:column}
+.list .it{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line);font-size:.9375rem}
+.list .it:first-child{border-top:0}
+.list .it .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list .it .room{font-size:.8125rem;color:var(--muted);min-width:56px;text-align:right}
+.big{font-size:2rem;font-weight:700;line-height:1.2}
+.empty{text-align:center;color:var(--muted);padding:32px 0}
+.linkbtn{color:var(--muted);font-size:.875rem;text-decoration:underline;padding:8px;align-self:center}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="sheet"></div>
+<script src="./qrcode.js"></script>
+<script>
+const LKEY='tonariba-local-v1';
+const SKEY='tonariba-static-state-v1';
+const ADMIN_PASS='1234';
+const NEEDS=['水・食料','薬・医療','移動の手伝い','その他'];
+const NAMES=['ことり','どんぐり','はちみつ','こもれび','すずめ','ひまわり','つくし','ほたる','もみじ','ひだまり','せせらぎ','たんぽぽ'];
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+const newName=()=>rnd(NAMES)+'・'+(10+Math.floor(Math.random()*90));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nowMs=()=>Date.now();
+
+function newCid(){
+  try{if(crypto.randomUUID)return crypto.randomUUID()}catch(e){}
+  return 'c'+Math.random().toString(36).slice(2)+Date.now().toString(36);
+}
+function loadJson(key,fallback){
+  try{
+    const raw=localStorage.getItem(key);
+    return raw?JSON.parse(raw):fallback;
+  }catch(e){return fallback}
+}
+function saveJson(key,val){
+  try{localStorage.setItem(key,JSON.stringify(val))}catch(e){}
+}
+
+const L=Object.assign({
+  cid:null,name:null,theme:null,fs:'m',tab:'info',pass:'',joined:false,adminOn:false,isAdmin:false
+},loadJson(LKEY,{}));
+if(!L.cid)L.cid=newCid();
+if(!L.name)L.name=newName();
+function saveL(){saveJson(LKEY,L)}
+saveL();
+
+function seedState(){
+  const n=nowMs();
+  return {
+    disaster:false,
+    nid:100,
+    people:{},
+    posts:[
+      {id:1,type:'official',kind:'event',author:'自治会',authorId:null,ts:n-180*60000,
+       title:'秋まつり',body:'屋台・ステージ・フリマ',date:'11/15\n(日)',place:'中央広場 10:00-15:00',
+       baseThanks:12,thanksBy:[],reportedBy:[],replies:[]},
+      {id:2,type:'official',kind:'notice',author:'UR管理',authorId:null,ts:n-300*60000,
+       title:'給水設備の点検',body:'11/11(水) 9:00-12:00\n3・4号棟は断水',
+       baseThanks:3,thanksBy:[],reportedBy:[],replies:[]},
+      {id:3,type:'official',kind:'notice',author:'自治会',authorId:null,ts:n-1500*60000,
+       title:'避難訓練の時間帯',body:'',baseThanks:5,thanksBy:[],reportedBy:[],replies:[],
+       poll:{opts:[{t:'午前',base:14},{t:'午後',base:9},{t:'どちらでも',base:21}],votes:{}}}
+    ]
+  };
+}
+
+let ST=loadJson(SKEY,null);
+if(!ST||!Array.isArray(ST.posts)||typeof ST.people!=='object'){
+  ST=seedState();
+  saveJson(SKEY,ST);
+}
+
+function clearPeople(){
+  Object.values(ST.people).forEach(x=>{
+    x.answer=null;
+    x.away=false;
+    x.needs=[];
+  });
+}
+
+function makeView(){
+  const cid=L.cid;
+  const admin=!!L.isAdmin;
+  const me=ST.people[cid]||null;
+  const posts=ST.posts.map(p=>{
+    const thanksBy=Array.isArray(p.thanksBy)?p.thanksBy:[];
+    const reportedBy=Array.isArray(p.reportedBy)?p.reportedBy:[];
+    const replies=Array.isArray(p.replies)?p.replies:[];
+    const d={
+      id:p.id,
+      type:p.type,
+      kind:p.kind,
+      author:p.author,
+      mine:!!cid&&p.authorId===cid,
+      ts:p.ts,
+      title:p.title||'',
+      body:p.body||'',
+      date:p.date||'',
+      place:p.place||'',
+      thanks:(p.baseThanks||0)+thanksBy.length,
+      thanked:thanksBy.includes(cid),
+      reported:reportedBy.includes(cid),
+      reports:admin?reportedBy.length:0,
+      replies:replies
+    };
+    if(p.poll){
+      const votes=p.poll.votes||{};
+      d.poll={
+        opts:p.poll.opts.map((o,i)=>({
+          t:o.t,
+          v:(o.base||0)+Object.values(votes).filter(x=>x===i).length
+        })),
+        voted:Object.prototype.hasOwnProperty.call(votes,cid)?votes[cid]:null
+      };
+    }
+    return d;
+  });
+  const people=admin?Object.values(ST.people).map(x=>({
+    name:x.name,
+    room:(x.consent&&x.room)?x.room:'',
+    status:ST.disaster?(x.answer||null):null,
+    away:!!x.away&&!!ST.disaster,
+    needs:Array.isArray(x.needs)?x.needs:[]
+  })):[];
+  return {
+    serverNow:nowMs(),
+    disaster:!!ST.disaster,
+    isAdmin:admin,
+    me:me,
+    posts:posts,
+    people:people,
+    count:Object.keys(ST.people).length
+  };
+}
+
+let V=makeView();
+let offset=0;
+let entered=false;
+let recon=false;
+let pending=false;
+let forceNext=false;
+let R={room:null};
+let prevDisaster;
+const S={};
+['tab','theme','fs'].forEach(k=>Object.defineProperty(S,k,{get:()=>L[k],set:v=>{L[k]=v}}));
+const me=()=>V&&V.me;
+Object.defineProperties(S,{
+  joined:{get:()=>entered},
+  name:{get:()=>me()?me().name:L.name},
+  disaster:{get:()=>!!(V&&V.disaster)},
+  admin:{get:()=>!!(V&&V.isAdmin&&L.adminOn)},
+  answer:{get:()=>me()?me().answer:null},
+  away:{get:()=>!!(me()&&me().away)},
+  needs:{get:()=>me()?me().needs:[]},
+  room:{get:()=>R.room!==null?R.room:(me()?me().room:'')},
+  consent:{get:()=>!!(me()&&me().consent)},
+  people:{get:()=>V?V.people:[]},
+  posts:{get:()=>V?V.posts.map(p=>Object.assign({},p,{t:(Date.now()+offset-p.ts)/60000})):[]}
+});
+let open={};
+let C=null;
+let fx={};
+let prevNav=null;
+
+function syncFromStore(){
+  ST=loadJson(SKEY,ST);
+  V=makeView();
+  offset=V.serverNow-Date.now();
+  if(prevDisaster!==undefined&&V.disaster!==prevDisaster){
+    fx={enter:1,mode:1};
+    L.tab=V.disaster?'safety':'info';
+    prevNav=null;
+  }
+  prevDisaster=V.disaster;
+  refresh();
+}
+
+function act(type,payload){
+  const d=payload||{};
+  const cid=L.cid;
+  const admin=!!L.isAdmin;
+  if(!cid||typeof cid!=='string'||cid.length>64)return {ok:false,error:'bad cid'};
+
+  if(type==='join'){
+    const name=String(d.name||'').trim().slice(0,16)||newName();
+    const pr=ST.people[cid];
+    if(pr){
+      pr.name=name;
+      pr.lastSeen=nowMs();
+    }else{
+      ST.people[cid]={name:name,room:'',consent:false,answer:null,away:false,needs:[],lastSeen:nowMs()};
+    }
+    L.name=name;
+    saveL();
+    saveJson(SKEY,ST);
+    syncFromStore();
+    return {ok:true};
+  }
+
+  if(type==='disaster'){
+    if(!admin)return {ok:false,error:'forbidden'};
+    const on=!!d.on;
+    clearPeople();
+    ST.disaster=on;
+    if(on){
+      if(!ST.posts.some(p=>p.kind==='support')){
+        const n=nowMs();
+        [['避難所 開設','北小学校 体育館',2],['給水','中央広場 10:00から',6]].forEach(([title,body,m])=>{
+          ST.nid+=1;
+          ST.posts.unshift({
+            id:ST.nid,type:'official',kind:'support',author:'自治会',authorId:null,
+            ts:n-m*60000,title:title,body:body,baseThanks:0,thanksBy:[],reportedBy:[],replies:[]
+          });
+        });
+      }
+    }else{
+      ST.posts=ST.posts.filter(p=>p.kind!=='support'&&p.kind!=='help');
+    }
+    saveJson(SKEY,ST);
+    syncFromStore();
+    return {ok:true};
+  }
+
+  let person=ST.people[cid];
+  if(!person){
+    person={name:L.name||newName(),room:'',consent:false,answer:null,away:false,needs:[],lastSeen:nowMs()};
+    ST.people[cid]=person;
+  }
+  person.lastSeen=nowMs();
+  const p=ST.posts.find(x=>x.id===Number(d.id))||null;
+
+  if(type==='profile'){
+    if(typeof d.name==='string'&&d.name.trim()){
+      person.name=d.name.trim().slice(0,16);
+      L.name=person.name;
+      saveL();
+    }
+    if(typeof d.room==='string'){
+      person.room=d.room.slice(0,12);
+    }
+    if('consent' in d){
+      person.consent=!!d.consent;
+    }
+  }else if(type==='post'){
+    const kind=d.kind;
+    const off=!!d.official;
+    if(off&&!admin)return {ok:false,error:'forbidden'};
+    const allowed=ST.disaster
+      ?(off?['support']:['help','chat'])
+      :(off?['notice','event']:['chat','event']);
+    if(!allowed.includes(kind))return {ok:false,error:'bad kind'};
+    const title=(kind==='event'||off)?String(d.title||'').trim().slice(0,30):'';
+    const body=String(d.body||'').trim().slice(0,400);
+    if(!body&&!title)return {ok:false,error:'empty'};
+    ST.nid+=1;
+    const np={
+      id:ST.nid,
+      type:off?'official':'resident',
+      kind:kind,
+      author:off?'自治会':person.name,
+      authorId:off?null:cid,
+      ts:nowMs(),
+      title:title,
+      body:body,
+      baseThanks:0,
+      thanksBy:[],
+      reportedBy:[],
+      replies:[]
+    };
+    if(kind==='event'){
+      np.date=String(d.date||'').trim().slice(0,10);
+      np.place=String(d.place||'').trim().slice(0,30);
+    }
+    const opts=Array.isArray(d.opts)
+      ?d.opts.slice(0,5).map(o=>String(o||'').trim().slice(0,20)).filter(Boolean)
+      :[];
+    if(opts.length>=2){
+      np.poll={opts:opts.map(t=>({t:t,base:0})),votes:{}};
+    }
+    ST.posts.unshift(np);
+  }else if(['thanks','report','reply','vote','delete'].includes(type)){
+    if(!p)return {ok:false,error:'no such post'};
+    if(type==='thanks'){
+      const i=p.thanksBy.indexOf(cid);
+      if(i>=0)p.thanksBy.splice(i,1);else p.thanksBy.push(cid);
+    }else if(type==='report'){
+      if(p.type==='official')return {ok:false,error:'official'};
+      const i=p.reportedBy.indexOf(cid);
+      if(i>=0)p.reportedBy.splice(i,1);else p.reportedBy.push(cid);
+    }else if(type==='reply'){
+      const text=String(d.text||'').trim().slice(0,140);
+      if(!text)return {ok:false,error:'empty'};
+      p.replies.push({name:person.name,text:text,ts:nowMs()});
+    }else if(type==='vote'){
+      if(!p.poll)return {ok:false,error:'no poll'};
+      const k=Number(d.opt);
+      if(!Number.isInteger(k)||k<0||k>=p.poll.opts.length)return {ok:false,error:'bad opt'};
+      p.poll.votes[cid]=k;
+    }else if(type==='delete'){
+      if(!(admin||p.authorId===cid))return {ok:false,error:'forbidden'};
+      ST.posts=ST.posts.filter(x=>x.id!==p.id);
+    }
+  }else if(type==='answer'){
+    if(!['ok','dmg','help'].includes(d.v))return {ok:false,error:'bad v'};
+    person.answer=d.v;
+    if(d.v!=='help')person.needs=[];
+  }else if(type==='need'){
+    if(!NEEDS.includes(d.v))return {ok:false,error:'bad v'};
+    person.needs=person.needs.includes(d.v)
+      ?person.needs.filter(n=>n!==d.v)
+      :person.needs.concat([d.v]);
+  }else if(type==='away'){
+    person.away=!!d.v;
+  }else{
+    return {ok:false,error:'unknown type'};
+  }
+
+  saveJson(SKEY,ST);
+  syncFromStore();
+  return {ok:true};
+}
+
+function connect(){
+  recon=false;
+  updateRecon();
+  syncFromStore();
+}
+function updateRecon(){const e=document.getElementById('recon');if(e)e.hidden=!recon}
+function blocked(){
+  if(forceNext)return false;
+  if(document.querySelector('#sheet .scrim:not(.out)'))return true;
+  const a=document.activeElement;
+  return !!(a&&a.id&&(a.id.startsWith('rin-')||a.id==='roomin'));
+}
+function refresh(){if(blocked())pending=true;else render()}
+document.addEventListener('focusout',()=>{setTimeout(()=>{if(pending&&!blocked())render()},400)});
+setInterval(()=>{if(entered&&V)refresh()},60000);
+window.addEventListener('storage',e=>{
+  if(e.key===SKEY||e.key===LKEY)syncFromStore();
+});
+
+function ago(m){m=Math.floor(m);if(m<1)return 'いま';if(m<60)return m+'分前';if(m<1440)return Math.floor(m/60)+'時間前';return Math.floor(m/1440)+'日前'}
+const ST_MAP={ok:['無事','s-ok'],dmg:['被害あり','s-dmg'],help:['支援が必要','s-help'],null:['安否不明','s-unk']};
+const stChip=k=>`<span class="status ${ST_MAP[k][1]}">${ST_MAP[k][0]}</span>`;
+
+function tabs(){
+  const t=S.disaster?[['safety','安否'],['aid','支援'],['town','近所']]:[['info','お知らせ'],['events','イベント'],['town','近所']];
+  if(S.admin)t.push(['admin','運営']);
+  return t;
+}
+function filterPosts(tab){
+  const f={info:p=>p.kind==='notice',events:p=>p.kind==='event',town:p=>p.kind==='chat',aid:p=>p.kind==='support'||p.kind==='help'}[tab];
+  return S.posts.filter(f).sort((a,b)=>a.t-b.t);
+}
+
+/* ---------- render ---------- */
+function applyTheme(){
+  const r=document.documentElement;
+  if(S.theme)r.setAttribute('data-theme',S.theme);else r.removeAttribute('data-theme');
+  r.setAttribute('data-fs',S.fs||'m');
+  r.setAttribute('data-disaster',S.disaster?'1':'0');
+}
+function render(){
+  pending=false;
+  applyTheme();saveL();
+  const app=document.getElementById('app');
+  if(!S.joined){app.innerHTML=joinView();drawQR();fx={};return}
+  if(!V){return}
+  const t=tabs();
+  if(!t.some(x=>x[0]===S.tab))S.tab=t[0][0];
+  const idx=t.findIndex(x=>x[0]===S.tab);
+  const from=prevNav&&prevNav.n===t.length?prevNav.i:idx;
+  const enter=fx.enter?`enter ${fx.dir>0?'r':fx.dir<0?'l':''}`:'';
+  const fab=!(S.tab==='safety'||S.tab==='admin');
+  const refocus=fx.replied;forceNext=false;
+  app.innerHTML=`
+  <div class="banner ${fx.mode&&S.disaster?'drop':''}">災害モード</div>
+  <header><span class="brand">となりば</span><span class="me">${esc(S.name)}</span><span class="sub" id="recon" ${recon?'':'hidden'}>再接続中</span><button class="iconbtn" data-act="settings">設定</button></header>
+  <main class="${enter}">${body()}</main>
+  ${fab?`<button class="fab ${fx.enter&&(fx.mode||!prevNav||!prevNav.fab)?'pop':''}" data-act="compose" aria-label="投稿">+</button>`:''}
+  <nav><div class="in" style="--n:${t.length}"><i class="ind" style="transform:translateX(${from*100}%)"></i>${t.map(x=>`<button class="${S.tab===x[0]?'on':''}" data-act="tab" data-v="${x[0]}">${x[1]}</button>`).join('')}</div></nav>`;
+  if(fx.mode&&S.disaster){const f=document.createElement('div');f.className='flash';document.body.appendChild(f);setTimeout(()=>f.remove(),800)}
+  if(from!==idx){const ind=app.querySelector('.ind');ind.offsetWidth;ind.style.transform=`translateX(${idx*100}%)`}
+  prevNav={i:idx,n:t.length,fab};
+  fx={};
+  if(refocus!==undefined){const n=document.getElementById('rin-'+refocus);if(n)n.focus()}
+}
+function go(tab){
+  const t=tabs(),o=t.findIndex(x=>x[0]===S.tab),n=t.findIndex(x=>x[0]===tab);
+  if(o===n)return;
+  fx={enter:1,dir:n>o?1:-1};S.tab=tab;render();window.scrollTo({top:0});
+}
+function body(){
+  if(S.tab==='safety')return safetyView();
+  if(S.tab==='admin')return adminView();
+  const list=filterPosts(S.tab);
+  return (list.length?list.map(postHtml).join(''):'<div class="empty">なし</div>')
+    +(S.tab==='info'&&V.isAdmin?`<button class="linkbtn" style="--i:${list.length}" data-act="drill">災害モードを体験</button>`:'');
+}
+function postHtml(p,i){
+  const off=p.type==='official',o=!!open[p.id];
+  const head=p.kind==='event'&&p.date
+    ?`<div class="flyerhead"><div class="date">${esc(p.date)}</div><div><h3>${esc(p.title)}</h3><div class="muted">${esc(p.place||'')}</div></div></div>`
+    :(p.title?`<h3>${esc(p.title)}</h3>`:'');
+  let poll='';
+  if(p.poll){
+    const tot=p.poll.opts.reduce((a,b)=>a+b.v,0)||1,v=p.poll.voted!==null,g=fx.voted===p.id?'grow':'';
+    poll=`<div class="poll">${p.poll.opts.map((x,k)=>{const pc=Math.round(x.v/tot*100);return `<button class="opt ${p.poll.voted===k?'mine':''}" data-act="vote" data-id="${p.id}" data-v="${k}">${v?`<i class="bar ${g}" style="width:${pc}%;animation-delay:${k*70}ms"></i>`:''}<span>${esc(x.t)}${v?`<em style="font-style:normal">${pc}%</em>`:''}</span></button>`}).join('')}</div>`;
+  }
+  const nr=fx.replied===p.id?p.replies.length-1:-1;
+  const right=[];
+  if(!off)right.push(c=>`<button class="${c}${p.reported?' on':''}" data-act="report" data-id="${p.id}">${p.reported?'通報済み':'通報'}</button>`);
+  if(S.admin&&p.reports>0)right.push(c=>`<span class="sub ${c}" style="align-self:center">通報 ${p.reports}</span>`);
+  if(S.admin||p.mine)right.push(c=>`<button class="${c}" data-act="delete" data-id="${p.id}">削除</button>`);
+  const rightHtml=right.map((f,k)=>f(k===0?'end':'')).join('');
+  return `<article class="card ${off?'official':''}" style="--i:${i}">
+    <div class="meta">${off?'<span class="badge">公式</span>':''}<b>${esc(p.author)}</b><span class="time">${ago(p.t)}</span></div>
+    ${head}${p.body?`<p>${esc(p.body)}</p>`:''}${poll}
+    <div class="actions">
+      <button class="${p.thanked?'on':''} ${fx.thanked===p.id?'bump':''}" data-act="thanks" data-id="${p.id}">ありがとう ${p.thanks||''}</button>
+      <button class="${o?'on':''}" data-act="replies" data-id="${p.id}">返信 ${p.replies.length||''}</button>
+      ${rightHtml}
+    </div>
+    ${o?`<div class="replies ${fx.opened===p.id?'open':''}">${p.replies.map((r,k)=>`<div class="reply ${k===nr?'new':''}"><b>${esc(r.name)}</b>${esc(r.text)}</div>`).join('')}
+      <div class="rbox"><input type="text" id="rin-${p.id}" placeholder="返信" maxlength="140"><button class="btn sm" data-act="reply" data-id="${p.id}">送信</button></div></div>`:''}
+  </article>`;
+}
+function safetyView(){
+  const a=S.answer;
+  const urgent=S.posts.filter(p=>p.type==='official'&&p.kind==='support').sort((x,y)=>x.t-y.t)[0];
+  const b=(v,cls,label)=>`<button class="${cls} ${a===v?'sel':''} ${fx.answered===v?'pop':''}" data-act="answer" data-v="${v}">${label}</button>`;
+  return `${urgent?`<section class="card urgent" style="--i:0"><div class="meta"><span class="badge">公式</span><b>${esc(urgent.author)}</b><span class="time">${ago(urgent.t)}</span></div><h3>${esc(urgent.title)}</h3><p>${esc(urgent.body)}</p></section>`:''}
+  <section class="card ask" style="--i:1">
+    <h2>無事ですか？</h2>
+    <div class="ans ${a?'dim':''}">${b('ok','a-ok','無事')}${b('dmg','a-dmg','被害あり')}${b('help','a-help','支援が必要')}</div>
+    ${a==='help'?`<div class="chips ${fx.answered==='help'?'fade':''}" style="justify-content:center">${NEEDS.map(n=>`<button class="chip ${S.needs.includes(n)?'on':''}" data-act="need" data-v="${n}">${n}</button>`).join('')}</div>`:''}
+    <label class="sw"><span>不在</span><input type="checkbox" class="tg" id="awayin" ${S.away?'checked':''}></label>
+  </section>
+  <section class="card" style="--i:2">
+    <label class="sw"><span>部屋番号を運営に伝える</span><input type="checkbox" class="tg" id="consentin" ${S.consent?'checked':''}></label>
+    ${S.consent?`<input type="text" id="roomin" class="${fx.consent?'fade':''}" value="${esc(S.room)}" placeholder="例 A-101" maxlength="12">`:''}
+    <div class="sub">運営のみ閲覧</div>
+  </section>
+  ${V.isAdmin?`<button class="linkbtn" style="--i:3" data-act="enddrill">災害モードを終了</button>`:''}`;
+}
+function adminView(){
+  const pp=S.people;
+  if(!S.disaster){
+    const reg=pp.filter(x=>x.room).length;
+    return `<section class="card" style="--i:0"><div class="muted">部屋番号の登録</div><div class="big">${reg} / ${pp.length}</div></section>`;
+  }
+  const cnt={ok:0,dmg:0,help:0,null:0};pp.forEach(x=>cnt[x.status]++);
+  const ord={help:0,dmg:1,null:2,ok:3};
+  const sorted=pp.slice().sort((a,b)=>ord[a.status]-ord[b.status]);
+  return `<section class="card" style="--i:0">
+    <div class="tally">
+      <div class="s-ok"><b>${cnt.ok}</b>無事</div><div class="s-dmg"><b>${cnt.dmg}</b>被害あり</div>
+      <div class="s-help"><b>${cnt.help}</b>支援が必要</div><div class="s-unk"><b>${cnt.null}</b>安否不明</div>
+    </div></section>
+  <section class="card" style="--i:1"><div class="list">${sorted.map(x=>`<div class="it"><span class="name">${esc(x.name)}${x.away||(x.needs&&x.needs.length)?`<br><span class="sub">${[x.away?'不在':'',...(x.needs||[])].filter(Boolean).map(esc).join(' / ')}</span>`:''}</span>${stChip(x.status)}<span class="room">${x.room?esc(x.room):'非公開'}</span></div>`).join('')}</div></section>`;
+}
+function joinUrl(){return location.href}
+function joinView(){
+  return `<div class="join"><div class="brand">となりば</div><div class="qr" id="qr"></div><div class="sub">${esc(joinUrl())}</div><button class="btn big" data-act="join">参加</button></div>`;
+}
+function drawQR(){
+  const el=document.getElementById('qr');if(!el)return;
+  try{
+    const q=qrcode(0,'M');q.addData(joinUrl());q.make();
+    const n=q.getModuleCount();let d='';
+    for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))d+=`M${c} ${r}h1v1h-1z`;
+    el.innerHTML=`<svg viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges"><path d="${d}" fill="#111"/></svg>`;
+  }catch(e){el.innerHTML='<div class="empty">QR</div>'}
+}
+
+/* ---------- sheets ---------- */
+const sheetEl=()=>document.getElementById('sheet');
+let sheetTok=0;
+function showSheet(html,first){
+  const el=sheetEl(),s=el.querySelector('.scrim:not(.out) .sheet');
+  if(!first&&s){s.innerHTML=html;return}
+  sheetTok++;el.innerHTML=`<div class="scrim" data-act="scrim"><div class="sheet">${html}</div></div>`;
+}
+function closeSheet(){
+  C=null;const sc=sheetEl().querySelector('.scrim');if(!sc)return;
+  sc.classList.add('out');const tok=++sheetTok;
+  setTimeout(()=>{if(tok===sheetTok)sheetEl().innerHTML=''},230);
+}
+function settingsSheet(first){
+  showSheet(`
+    <div class="field"><label>表示名</label><div class="row"><input type="text" id="nm" value="${esc(S.name)}" maxlength="16"><button class="btn ghost sm" data-act="rename">変更</button></div></div>
+    <div class="field"><label>部屋番号（運営のみ）</label><input type="text" id="rm" value="${esc(S.room)}" placeholder="例 A-101" maxlength="12"></div>
+    <label class="sw"><span>災害時に運営へ伝える</span><input type="checkbox" class="tg" id="cs" ${S.consent?'checked':''}></label>
+    <div class="chips">
+      <button class="chip ${!S.theme?'on':''}" data-act="theme" data-v="">自動</button>
+      <button class="chip ${S.theme==='light'?'on':''}" data-act="theme" data-v="light">ライト</button>
+      <button class="chip ${S.theme==='dark'?'on':''}" data-act="theme" data-v="dark">ダーク</button></div>
+    <div class="field"><label>文字の大きさ</label><div class="seg">
+      <button class="${(S.fs||'m')==='m'?'on':''}" data-act="fs" data-v="m" style="font-size:16px">標準</button>
+      <button class="${S.fs==='l'?'on':''}" data-act="fs" data-v="l" style="font-size:19px">大</button>
+      <button class="${S.fs==='xl'?'on':''}" data-act="fs" data-v="xl" style="font-size:22px">特大</button></div></div>
+    ${V&&V.isAdmin?`<label class="sw"><span>災害モード</span><input type="checkbox" class="tg alert" id="dm" ${S.disaster?'checked':''}></label>`:''}
+    <label class="sw"><span>運営ビュー</span><input type="checkbox" class="tg" id="ad" ${S.admin?'checked':''}></label>
+    <div class="row"><button class="btn" data-act="close">閉じる</button><button class="btn ghost" data-act="reset">リセット</button></div>`,first);
+}
+function composeSheet(first){
+  const kinds=C.official?(S.disaster?[['support','支援情報']]:[['notice','お知らせ'],['event','イベント']])
+                        :(S.disaster?[['help','助け合い'],['chat','近所']]:[['chat','近所'],['event','イベント']]);
+  showSheet(`
+    <div class="chips">${kinds.map(k=>`<button class="chip ${C.kind===k[0]?'on':''}" data-act="ckind" data-v="${k[0]}">${k[1]}</button>`).join('')}</div>
+    ${C.kind==='event'||C.official?`<input type="text" id="cti" placeholder="タイトル" maxlength="30" value="${esc(C.title)}">`:''}
+    ${C.kind==='event'?`<div class="row"><input type="text" id="cdt" placeholder="日付" maxlength="10" value="${esc(C.date)}"><input type="text" id="cpl" placeholder="場所・時間" maxlength="30" value="${esc(C.place)}"></div>`:''}
+    <textarea id="ctx" maxlength="400">${esc(C.text)}</textarea>
+    ${C.poll?`<div class="field">${C.opts.map((o,i)=>`<input type="text" class="copt" placeholder="選択肢${i+1}" maxlength="20" value="${esc(o)}">`).join('')}
+      ${C.opts.length<5?'<button class="chip" data-act="addopt">＋</button>':''}</div>`:''}
+    <div class="chips"><button class="chip ${C.poll?'on':''}" data-act="cpoll">アンケート</button>
+      ${S.admin?`<button class="chip ${C.official?'on':''}" data-act="cofficial">公式</button>`:''}</div>
+    <div class="row"><button class="btn" data-act="post">投稿</button><button class="btn ghost" data-act="close">やめる</button></div>`,first);
+}
+function syncC(){
+  const g=id=>{const e=document.getElementById(id);return e?e.value:null};
+  if(g('ctx')!==null)C.text=g('ctx');
+  if(g('cti')!==null)C.title=g('cti');
+  if(g('cdt')!==null)C.date=g('cdt');
+  if(g('cpl')!==null)C.place=g('cpl');
+  const o=[...document.querySelectorAll('.copt')];if(o.length)C.opts=o.map(e=>e.value);
+}
+const tabOf=k=>({notice:'info',event:'events',chat:'town',support:'aid',help:'aid'}[k]);
+function doPost(){
+  syncC();
+  const text=C.text.trim(),opts=C.opts.map(s=>s.trim()).filter(Boolean);
+  if(!text&&!C.title.trim()){const t=document.getElementById('ctx');t.classList.remove('bump');t.offsetWidth;t.classList.add('bump');return}
+  const c=C,dest=tabOf(c.kind);
+  closeSheet();
+  forceNext=true;
+  const r=act('post',{kind:c.kind,official:c.official,title:c.kind==='event'||c.official?c.title.trim():'',body:text,date:c.date.trim(),place:c.place.trim(),opts:c.poll&&opts.length>=2?opts:[]});
+  forceNext=false;
+  if(!r.ok)return;
+  if(dest!==S.tab)go(dest);
+  fx={enter:1};
+  window.scrollTo({top:0});
+  if(pending)render();
+}
+function addReply(id,input){
+  const t=input.value.trim();if(!t)return;
+  input.value='';fx={replied:id};forceNext=true;
+  const r=act('reply',{id,text:t});
+  if(!r.ok){forceNext=false;fx={}}
+}
+
+/* ---------- profile sync ---------- */
+let roomTimer=null;
+function sendRoom(){
+  clearTimeout(roomTimer);roomTimer=null;
+  if(R.room===null)return;
+  const v=R.room;
+  act('profile',{room:v});
+  if(R.room===v)R.room=null;
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;
+  const a=el.dataset.act,v=el.dataset.v,id=+el.dataset.id;
+  const post=()=>S.posts.find(p=>p.id===id);
+  if(a==='scrim'){if(e.target===el){closeSheet();render()}return}
+  switch(a){
+    case 'join':{const j=document.querySelector('.join');if(!j||j.classList.contains('leave'))break;j.classList.add('leave');
+      const anim=new Promise(r=>setTimeout(r,420));
+      (async()=>{
+        act('join',{name:L.name});L.joined=true;saveL();connect();await anim;
+        entered=true;fx={enter:1};render();
+      })();break}
+    case 'tab':go(v);break;
+    case 'settings':settingsSheet(true);break;
+    case 'close':closeSheet();render();break;
+    case 'rename':{const n=document.getElementById('nm').value.trim();L.name=n||newName();saveL();act('profile',{name:L.name});settingsSheet();break}
+    case 'theme':S.theme=v||null;settingsSheet();applyTheme();saveL();break;
+    case 'fs':S.fs=v;settingsSheet();applyTheme();saveL();break;
+    case 'reset':
+      if(confirm('設定だけリセットしますか？')){
+        L.tab='info';L.theme=null;L.fs='m';L.adminOn=false;saveL();
+        open={};prevNav=null;closeSheet();render();
+      }
+      break;
+    case 'thanks':fx={thanked:id};act('thanks',{id});break;
+    case 'replies':open[id]=!open[id];fx={opened:id};render();break;
+    case 'reply':addReply(id,document.getElementById('rin-'+id));break;
+    case 'vote':{const p=post(),k=+v;if(p.poll.voted===k)break;fx={voted:id};act('vote',{id,opt:k});break}
+    case 'answer':fx={answered:v};act('answer',{v});break;
+    case 'need':act('need',{v});break;
+    case 'report':fx={thanked:-1};act('report',{id});break;
+    case 'delete':if(confirm('この投稿を削除しますか？'))act('delete',{id});break;
+    case 'drill':act('disaster',{on:true});break;
+    case 'enddrill':act('disaster',{on:false});break;
+    case 'compose':C={kind:{aid:'help',events:'event',town:'chat',info:'chat'}[S.tab]||'chat',official:false,text:'',title:'',date:'',place:'',poll:false,opts:['','']};composeSheet(true);break;
+    case 'ckind':syncC();C.kind=v;composeSheet();break;
+    case 'cpoll':syncC();C.poll=!C.poll;composeSheet();break;
+    case 'addopt':syncC();C.opts.push('');composeSheet();break;
+    case 'cofficial':syncC();C.official=!C.official;C.kind=C.official?(S.disaster?'support':'notice'):(S.disaster?'help':'chat');composeSheet();break;
+    case 'post':doPost();break;
+  }
+});
+function toggleAdmin(box){
+  if(!box.checked){L.adminOn=false;saveL();setTimeout(()=>{closeSheet();render()},250);return}
+  if(!L.isAdmin){
+    const p=prompt('運営パスコード');
+    if(!p){box.checked=false;return}
+    if(p.trim()!==ADMIN_PASS){
+      alert('パスコードが違います');
+      box.checked=false;
+      L.adminOn=false;
+      saveL();
+      return;
+    }
+    L.pass=p.trim();
+    L.isAdmin=true;
+    saveL();
+    syncFromStore();
+  }
+  L.adminOn=true;saveL();setTimeout(()=>{closeSheet();render()},250);
+}
+document.addEventListener('change',e=>{
+  const id=e.target.id;
+  if(id==='dm'){const on=e.target.checked;closeSheet();setTimeout(()=>act('disaster',{on}),180)}
+  else if(id==='ad')toggleAdmin(e.target);
+  else if(id==='cs'){act('profile',{consent:e.target.checked})}
+  else if(id==='consentin'){fx={consent:1};act('profile',{consent:e.target.checked})}
+  else if(id==='awayin'){act('away',{v:e.target.checked})}
+  else if(id==='rm'||id==='roomin'){R.room=e.target.value;sendRoom()}
+});
+document.addEventListener('input',e=>{
+  if(e.target.id==='rm'||e.target.id==='roomin'){R.room=e.target.value;clearTimeout(roomTimer);roomTimer=setTimeout(sendRoom,500)}
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&e.target.id&&e.target.id.startsWith('rin-'))addReply(+e.target.id.slice(4),e.target);
+});
+(function boot(){
+  syncFromStore();
+  render();
+})();
+</script>
+</body>
+</html>
